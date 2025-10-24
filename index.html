@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Full-Stack Developer Quiz — Earn KES 5 per correct answer</title>
+  <style>
+    :root{
+      --bg:#f6fbff; --card:#ffffff; --accent:#0a63b7; --muted:#666;
+      --correct:#d4f7dc; --wrong:#ffd6d6; --border:#e6eefc;
+    }
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #eef7ff 0%, var(--bg) 100%);
+      margin:0; padding:24px; color:#0b2340;
+    }
+    .container{ max-width:1024px; margin:0 auto; }
+    header{ display:flex; align-items:center; gap:16px; margin-bottom:18px; }
+    header h1{ margin:0; font-size:20px; letter-spacing: -0.3px; }
+    header p{ margin:0; color:var(--muted); font-size:13px; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; box-shadow:0 6px 20px rgba(10,60,120,0.04); }
+    .meta{ display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+    .meta .badge{ background:linear-gradient(90deg,#e7f1ff,#f0f6ff); color:var(--accent); padding:6px 10px; border-radius:999px; font-weight:600; font-size:13px; }
+    .question{ margin:12px 0; padding:12px; border-radius:8px; border:1px solid transparent; }
+    .qhead{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .qnum{ font-weight:700; color:var(--accent); }
+    .qtext{ margin-top:6px; color:#122238; }
+    .options{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+    label.option{ display:flex; gap:10px; align-items:center; background:#fbfdff; padding:10px; border-radius:8px; cursor:pointer; border:1px solid #f0f6ff; }
+    input[type="radio"]{ width:16px; height:16px; }
+    .controls{ display:flex; gap:10px; margin-top:18px; align-items:center; }
+    button{ background:var(--accent); color:white; border:0; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:700; }
+    button.secondary{ background:transparent; color:var(--accent); border:1px solid var(--border); font-weight:600; }
+    .results{ margin-top:18px; padding:12px; border-radius:8px; background:#fbfbff; border:1px dashed var(--border); }
+    .correct{ background:var(--correct); border:1px solid #a6e6b6; }
+    .wrong{ background:var(--wrong); border:1px solid #ffc4c4; }
+    .answerKey{ font-size:13px; color:#07294a; font-weight:700; }
+    .reveal{ margin-top:10px; color:var(--muted); font-size:13px; }
+    .scoreBox{ display:flex; gap:12px; align-items:center; }
+    .scoreNum{ font-size:20px; font-weight:800; color:var(--accent); }
+    footer{ margin-top:26px; color:var(--muted); font-size:13px; text-align:center; }
+    .hint{ margin-top:8px; color:#0c3f70; font-size:13px; }
+    .small{ font-size:13px; color:var(--muted); }
+    .question.correct { border-color:#bfe9c7; box-shadow:0 2px 6px rgba(5,130,72,0.04); }
+    .question.wrong { border-color:#f6c6c6; box-shadow:0 2px 6px rgba(220,50,50,0.04); }
+    .legend{ display:flex; gap:12px; margin-top:10px; align-items:center; }
+    .legend b{ display:inline-block; width:14px; height:14px; border-radius:3px; }
+    .legend span{ font-size:12px; color:var(--muted); }
+    @media (max-width:640px){
+      body{ padding:12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="card" style="padding:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="https://share.google/images/yifbeTdHCbpWmxPre" alt="" style="width:44px;height:44px;border-radius:8px;background:linear-gradient(90deg,#e6f2ff,#ffffff);display:inline-block">
+          <div>
+            <h1>Jutechs — Full-Stack Developer Quiz</h1>
+            <p class="small">50 multiple-choice questions • KES 5 per correct answer • Passing = 60%</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="card" id="app">
+      <div class="meta">
+        <div class="badge">Frontend-only · No backend</div>
+        <div class="small">Each correct answer = <strong>KES 5</strong></div>
+        <div style="margin-left:auto" class="small">Total possible: <span id="totalPoints">—</span> KES</div>
+      </div>
+
+      <div id="quizContainer"></div>
+
+      <div class="controls">
+        <button id="submitBtn">Submit Answers</button>
+        <button class="secondary" id="resetBtn" type="button">Reset / Start Over</button>
+        <div style="margin-left:auto" class="small">Passing threshold: <strong id="passPercent">60%</strong></div>
+      </div>
+
+      <div id="resultArea" class="results" style="display:none"></div>
+
+      <div class="hint">
+        Tip: Answer all questions. If you score below passing, correct answers will be shown for each question.
+      </div>
+
+      <div class="legend">
+        <div style="display:flex;align-items:center;gap:6px"><b style="background:var(--correct)"></b><span>Correct</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><b style="background:var(--wrong)"></b><span>Wrong</span></div>
+      </div>
+    </main>
+
+    <footer>
+      <div>Built for quick assessment — front-end only. Save this file and open in a browser to run.</div>
+    </footer>
+  </div>
+
+  <script>
+    /*************************************************************************
+     * Single-file Frontend Quiz App
+     * - 50 questions
+     * - 4 options each
+     * - 5 KES per correct answer
+     * - Passing threshold = 60% (can be adjusted)
+     * - If user fails (score < passThreshold), show the correct answer for each question
+     *************************************************************************/
+
+    // CONFIG
+    const POINTS_PER_CORRECT = 5;          // KES per correct answer
+    const PASS_PERCENT = 60;               // percent threshold to pass
+    const QUESTIONS = [
+      // 50 questions start here (topic: full-stack fundamentals)
+      { q: "What does HTML stand for?", options:["Hyper Text Markup Language","Home Tool Markup Language","Hyperlink Text Marking Language","Hyper Transfer Markup Language"], correct:0 },
+      { q: "Which HTML element is used to create a hyperlink?", options:["<a>","<link>","<href>","<url>"], correct:0 },
+      { q: "Which tag defines the main heading on a page?", options:["<h1>","<header>","<title>","<head>"], correct:0 },
+      { q: "Which attribute specifies the URL of an image in <img> tag?", options:["src","href","alt","link"], correct:0 },
+      { q: "Which HTML element is used to create an ordered list?", options:["<ol>","<ul>","<li>","<list>"], correct:0 },
+
+      { q: "What does CSS stand for?", options:["Cascading Style Sheets","Computer Style Sheets","Creative Style Syntax","Colorful Style Sheets"], correct:0 },
+      { q: "Which CSS property changes text color?", options:["color","text-color","font-color","foreground"], correct:0 },
+      { q: "How do you select an element with id 'nav' in CSS?", options:["#nav",".nav","nav","#.nav"], correct:0 },
+      { q: "Which property makes text bold in CSS?", options:["font-weight","text-bold","font-style","text-weight"], correct:0 },
+      { q: "Which CSS property adds space inside an element's border?", options:["padding","margin","gap","spacing"], correct:0 },
+
+      { q: "Which language adds interactivity to web pages?", options:["JavaScript","HTML","CSS","SQL"], correct:0 },
+      { q: "Which method is used to find an element by id in JS?", options:["document.getElementById","document.query('#id')","document.find('id')","element.byId"], correct:0 },
+      { q: "Which operator assigns value in JavaScript?", options:["=","==","===",":="], correct:0 },
+      { q: "Which array method adds an element to the end?", options:["push","pop","shift","unshift"], correct:0 },
+      { q: "What will typeof [] return in JS?", options:["object","array","list","undefined"], correct:0 },
+
+      { q: "Which HTTP method typically retrieves data?", options:["GET","POST","PUT","DELETE"], correct:0 },
+      { q: "Which HTTP status code means 'Not Found'?", options:["404","200","500","301"], correct:0 },
+      { q: "What does REST stand for?", options:["Representational State Transfer","Remote State Transfer","Representational Static Transfer","Regional State Transfer"], correct:0 },
+      { q: "Which content type is JSON usually sent as?", options:["application/json","text/html","text/plain","application/xml"], correct:0 },
+      { q: "Which HTTP method is typically used to create a resource?", options:["POST","GET","PATCH","OPTIONS"], correct:0 },
+
+      { q: "Which DB language is used to query relational databases?", options:["SQL","NoSQL","GraphQL","HTML"], correct:0 },
+      { q: "Which SQL statement retrieves data from a table?", options:["SELECT","INSERT","UPDATE","DELETE"], correct:0 },
+      { q: "Which SQL clause filters rows returned?", options:["WHERE","GROUP BY","ORDER BY","HAVING"], correct:0 },
+      { q: "Which statement removes all rows but keeps table structure?", options:["TRUNCATE","DROP","DELETE","REMOVE"], correct:0 },
+      { q: "Which SQL function returns number of rows?", options:["COUNT()","SUM()","TOTAL()","ROWCOUNT()"], correct:0 },
+
+      { q: "In React, which hook manages state in functional components?", options:["useState","useEffect","useContext","useRef"], correct:0 },
+      { q: "React uses which concept to update the UI efficiently?", options:["Virtual DOM","Real DOM","Shadow DOM","Direct DOM"], correct:0 },
+      { q: "Which file typically contains React component markup using JSX?", options:[".jsx",".html",".css",".json"], correct:0 },
+      { q: "What command is recommended to create a React app using CRA toolchain?", options:["npx create-react-app myApp","npm install react-app","react init myApp","create-react-app myApp"], correct:0 },
+      { q: "Which library is commonly used for state management in React apps?", options:["Redux","Express","Django","SQLite"], correct:0 },
+
+      { q: "Which of these is a front-end framework?", options:["Vue","Django","Laravel","Express"], correct:0 },
+      { q: "Which Vue directive binds an input value for two-way binding?", options:["v-model","v-bind","v-on","v-show"], correct:0 },
+      { q: "Which of these is a CSS preprocessor?", options:["Sass","React","Node","MySQL"], correct:0 },
+      { q: "Which build tool bundles JS modules for browser use?", options:["Webpack","Postman","Docker","MongoDB"], correct:0 },
+      { q: "Which package manager is commonly used with Node.js?", options:["npm","pip","composer","gem"], correct:0 },
+
+      { q: "What does CORS control in web applications?", options:["Cross-Origin Resource Sharing","Client-Origin Resource Sharing","Cached-Origin Resource Sharing","Cross-Origin Resource Security"], correct:0 },
+      { q: "Which browser storage is persistent and key-value based for web apps?", options:["localStorage","sessionStorage","cookies","cacheStorage"], correct:0 },
+      { q: "Which of these tools is used for containerizing applications?", options:["Docker","Nginx","Webpack","Bcrypt"], correct:0 },
+      { q: "Which protocol secures HTTP traffic?", options:["HTTPS","FTP","SMTP","TCP"], correct:0 },
+      { q: "Which of the following is a NoSQL database?", options:["MongoDB","PostgreSQL","MySQL","SQLite"], correct:0 },
+
+      { q: "Which command runs a local development server in many Node projects?", options:["npm start","npm run-build","node server.js","npm install"], correct:0 },
+      { q: "Which of these is a task runner or scripting tool frequently used in frontend builds?", options:["Gulp","Redis","Nginx","Jenkins"], correct:0 },
+      { q: "What is the main benefit of responsive design?", options:["Works well on multiple screen sizes","Faster server response","Stronger database security","Improved backend performance"], correct:0 },
+      { q: "Which of these is used to version-control source code?", options:["Git","SVN","FTP","SSH"], correct:0 },
+      { q: "Which command creates a new git commit after changes are staged?", options:["git commit -m \"msg\"","git add .","git push origin","git clone"], correct:0 },
+
+      { q: "Which header tells the browser to set a cookie from server response?", options:["Set-Cookie","Cookie","X-Set","Cookie-Set"], correct:0 },
+      { q: "What does SPA mean in web development?", options:["Single Page Application","Simple Page App","Server Page Application","Secure Page App"], correct:0 },
+      { q: "Which of the following is used to test HTTP endpoints manually?", options:["Postman","React","Docker","Webpack"], correct:0 },
+      { q: "Which technique loads assets only when needed to improve performance?", options:["Lazy loading","Preloading","Bundling","Inlining"], correct:0 },
+      { q: "Which header status code indicates server error?", options:["500","200","301","404"], correct:0 },
+
+      { q: "Which of these helps prevent XSS attacks by encoding output?", options:["Escaping","Minifying","Bundling","Caching"], correct:0 },
+      { q: "Which authentication standard uses tokens and often stateless sessions?", options:["JWT","Session Cookies","Basic Auth","NTLM"], correct:0 },
+      { q: "Which environment file often contains environment-specific variables in Node apps?", options:[".env",".env.local","config.json","settings.yaml"], correct:0 },
+      { q: "Which of these folders commonly contains static front-end assets in many frameworks?", options:["public","private","server","config"], correct:0 },
+      { q: "Which technique is best to store passwords securely?", options:["Hashing with salt","Storing plain text","Encrypting with reversible keys","Sending to client"], correct:0 }
+    ];
+    // End QUESTIONS array (should be exactly 50)
+
+    // Some sanity checks and derived values (compute carefully)
+    const TOTAL_QUESTIONS = QUESTIONS.length;               // number of questions
+    // Step-by-step arithmetic to avoid mistakes (per instruction):
+    // 1) Points per correct = POINTS_PER_CORRECT
+    // 2) Max correct possible = TOTAL_QUESTIONS
+    // 3) Total points possible = POINTS_PER_CORRECT * TOTAL_QUESTIONS
+    const TOTAL_POINTS = POINTS_PER_CORRECT * TOTAL_QUESTIONS; // e.g., 5 * 50 = 250
+    // 4) Passing count (number of correct answers required) = ceil(TOTAL_QUESTIONS * PASS_PERCENT/100)
+    const PASS_COUNT = Math.ceil(TOTAL_QUESTIONS * PASS_PERCENT / 100); // e.g., ceil(50*0.6)=30
+    // 5) Points to pass = PASS_COUNT * POINTS_PER_CORRECT
+    const POINTS_TO_PASS = PASS_COUNT * POINTS_PER_CORRECT;
+
+    // UI elements
+    const quizContainer = document.getElementById('quizContainer');
+    const totalPointsSpan = document.getElementById('totalPoints');
+    const passPercentSpan = document.getElementById('passPercent');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultArea = document.getElementById('resultArea');
+
+    // Insert total points & pass percent
+    totalPointsSpan.textContent = TOTAL_POINTS.toString();
+    passPercentSpan.textContent = PASS_PERCENT + '%';
+
+    // Render quiz
+    function renderQuiz(){
+      quizContainer.innerHTML = '';
+      QUESTIONS.forEach((item, idx) => {
+        const qWrap = document.createElement('div');
+        qWrap.className = 'question card';
+        qWrap.id = 'q-' + idx;
+
+        // header
+        const head = document.createElement('div');
+        head.className = 'qhead';
+        head.innerHTML = `<div class="qnum">Q${idx+1}</div><div class="small">Worth: KES ${POINTS_PER_CORRECT}</div>`;
+        qWrap.appendChild(head);
+
+        // text
+        const text = document.createElement('div');
+        text.className = 'qtext';
+        text.innerHTML = '<div style="font-weight:600;">' + escapeHtml(item.q) + '</div>';
+        qWrap.appendChild(text);
+
+        // options
+        const optWrap = document.createElement('div');
+        optWrap.className = 'options';
+        item.options.forEach((opt, oi) => {
+          const id = `q${idx}_opt${oi}`;
+          const label = document.createElement('label');
+          label.className = 'option';
+          label.setAttribute('for', id);
+          label.innerHTML = `<input type="radio" name="q${idx}" id="${id}" value="${oi}" /> <div>${escapeHtml(opt)}</div>`;
+          optWrap.appendChild(label);
+        });
+        qWrap.appendChild(optWrap);
+
+        quizContainer.appendChild(qWrap);
+      });
+      // focus top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Escape helper
+    function escapeHtml(text){
+      return text.replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+    }
+
+    // Grade quiz
+    function gradeQuiz(){
+      // Collect user answers
+      let correctCount = 0;
+      let unanswered = 0;
+      const perQuestion = []; // objects {selectedIndex, correctIndex, isCorrect}
+
+      for(let i=0;i<TOTAL_QUESTIONS;i++){
+        const radios = document.getElementsByName('q' + i);
+        let sel = -1;
+        for(const r of radios){
+          if(r.checked){ sel = Number(r.value); break; }
+        }
+        if(sel === -1) unanswered++;
+        const correctIndex = QUESTIONS[i].correct;
+        const isCorrect = sel === correctIndex;
+        if(isCorrect) correctCount++;
+        perQuestion.push({ selectedIndex: sel, correctIndex, isCorrect });
+      }
+
+      // Calculate scores
+      const totalScore = correctCount * POINTS_PER_CORRECT;
+      const passed = correctCount >= PASS_COUNT;
+      // Build result UI
+      resultArea.style.display = 'block';
+      resultArea.innerHTML = ''; // reset
+
+      const scoreBox = document.createElement('div');
+      scoreBox.className = 'scoreBox';
+      scoreBox.innerHTML = `
+        <div class="scoreNum">${totalScore} KES</div>
+        <div>
+          <div style="font-weight:700">${correctCount} / ${TOTAL_QUESTIONS} correct</div>
+          <div class="small">Passing requires ${PASS_COUNT} correct (${PASS_PERCENT}%) — i.e. ${POINTS_TO_PASS} KES</div>
+        </div>
+      `;
+      resultArea.appendChild(scoreBox);
+
+      const status = document.createElement('div');
+      status.style.marginTop = '10px';
+      if(passed){
+        status.innerHTML = `<div style="color:green;font-weight:800">Congratulations — you passed!</div>`;
+      } else {
+        status.innerHTML = `<div style="color:#b02626;font-weight:800">You did not reach the passing score. Correct answers are shown below.</div>`;
+      }
+      resultArea.appendChild(status);
+
+      if(unanswered > 0){
+        const u = document.createElement('div');
+        u.className = 'small';
+        u.style.marginTop = '8px';
+        u.textContent = `Unanswered questions: ${unanswered}. Please answer all questions for full evaluation.`;
+        resultArea.appendChild(u);
+      }
+
+      // If failed, reveal correct answers for each question (and mark right/wrong always for clarity)
+      // The user requested: "when user submit answers if failed show correct answer for each."
+      // We'll reveal correct answers for every question only if failed; if passed, we still highlight correct/wrong but do not auto-reveal answers textually.
+      QUESTIONS.forEach((item, idx) => {
+        const qdiv = document.getElementById('q-' + idx);
+        qdiv.classList.remove('correct','wrong');
+        // apply visual marking
+        const info = perQuestion[idx];
+        if(info.isCorrect){
+          qdiv.classList.add('correct');
+        } else {
+          qdiv.classList.add('wrong');
+        }
+
+        // Remove any previous markers
+        const existingNote = qdiv.querySelector('.reveal');
+        if(existingNote) existingNote.remove();
+
+        if(!passed){
+          // show correct answer text
+          const note = document.createElement('div');
+          note.className = 'reveal';
+          note.innerHTML = `<span class="answerKey">Correct answer:</span> ${escapeHtml(item.options[item.correct])}`;
+          qdiv.appendChild(note);
+        } else {
+          // when passed, show subtle confirmation under each question (optional)
+          const note = document.createElement('div');
+          note.className = 'reveal';
+          note.style.opacity = '0.9';
+          if(info.isCorrect){
+            note.textContent = 'You answered correctly.';
+          } else {
+            note.textContent = 'Incorrect — review later.';
+            // but do not display the correct option explicitly when passed (to stick to "only show when failed")
+          }
+          qdiv.appendChild(note);
+        }
+      });
+
+      // Scroll to results
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Reset / start over
+    function resetQuiz(){
+      // Clear all radio selections
+      for(let i=0;i<TOTAL_QUESTIONS;i++){
+        const radios = document.getElementsByName('q' + i);
+        for(const r of radios) r.checked = false;
+        const qdiv = document.getElementById('q-' + i);
+        if(qdiv){ qdiv.classList.remove('correct','wrong'); 
+                  const note = qdiv.querySelector('.reveal'); if(note) note.remove(); }
+      }
+      resultArea.style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Attach events
+    submitBtn.addEventListener('click', () => {
+      gradeQuiz();
+    });
+    resetBtn.addEventListener('click', () => {
+      if(confirm('Reset all answers and start over?')) resetQuiz();
+    });
+
+    // Initial render
+    renderQuiz();
+
+    // Keyboard accessibility: allow submit with Ctrl+Enter
+    document.addEventListener('keydown', (e) => {
+      if(e.ctrlKey && e.key === 'Enter'){
+        gradeQuiz();
+      }
+    });
+
+    // Expose helper for debugging if needed
+    window.quizInfo = { TOTAL_QUESTIONS, POINTS_PER_CORRECT, TOTAL_POINTS, PASS_COUNT, POINTS_TO_PASS, PASS_PERCENT };
+
+  </script>
+</body>
+</html>
